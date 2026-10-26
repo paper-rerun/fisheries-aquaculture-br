@@ -1,0 +1,25 @@
+{
+  "title": "Fish landings and aquaculture trials in Brazil: 1,672 records from 8 publications (pilot)",
+  "upload_type": "dataset",
+  "description": "1,672 records transcribed from the tables and text of 8 Portuguese-language publications printed between 2004 and 2013. 1,458 landing and catch records from 5 documents: the SCPESCA/MS 2007 bulletin of professional and sport fishing in the Pantanal (MS), artisanal fishing in the Billings reservoir in 2005-2007 (SP), landings at the port of Tefé in January to June 2012 (AM), the catch of 3 fish weirs on the coast of Piauí in 2008-2009 (PI) and artisanal gillnet landings at Tijucas in 2010-2011 (SC). 214 treatment means from 3 aquaculture trials: tambaqui at 4 stocking densities in net cages (AM), 3 tilapia strains in raceways (AL) and jundiá in a 2 x 2 trial of stocking density and feeding frequency in net cages (RS). Landing records join 80 strata (study, landing site, capture area, vessel type, fishery, data source) on doc_id and stratum_ids; trial records join 3 trials on doc_id and trial_id. Species names, units and periods are kept exactly as printed, with common and scientific names in separate fields; the 46 species key pairs printed in the documents are a separate file. Printed totals are kept as records flagged as totals, never recomputed, and checked against their parts: of 186 totals, 167 add up exactly, 10 within rounding, 7 do not add up in the source and 2 cannot be checked. Each document was checked as not available in structured form (FAO FishStat, national bulletins, IBGE SIDRA, dados.gov.br, DataCite) before transcription. Each document was transcribed twice, independently, by AI agents, and every disagreement was settled against the PDF; no number and no name was misread in the 1,665 paired records. A human reviewed the result before publication. Pilot of 8 documents; part of the Paper Rerun project (Open Tables).",
+  "creators": [
+    {
+      "name": "Tessaro, Filipe"
+    }
+  ],
+  "license": "cc-by-4.0",
+  "keywords": [
+    "fisheries",
+    "artisanal fisheries",
+    "fish landings",
+    "aquaculture",
+    "tambaqui",
+    "tilapia",
+    "Pantanal",
+    "Amazon",
+    "Brazil",
+    "Embrapa",
+    "open data",
+    "AI agents"
+  ]
+}

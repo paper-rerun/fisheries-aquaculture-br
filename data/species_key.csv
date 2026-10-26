@@ -1,0 +1,47 @@
+doc_id,key_id,page,table_or_figure,common_name_as_printed,scientific_name_as_printed,footnote_markers,notes
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n1,12,Tabela 1,Barbado,"Pinirampus pirinampu (Spix, 1829)",1,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n2,12,Tabela 1,Barbado,"Luciopimelodus pati (Valenciennes, 1840)",,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n3,12,Tabela 1,Cachara,"Pseudoplatystoma reticulatum (Eigenmann & Eigenmann, 1889)",3,Marker printed is 3 (introduzida); footnote 2 (descrita anteriormente como P. fasciatum) has no marker in the table.
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n4,12,Tabela 1,Curimbatá,"Prochilodus lineatus (Valenciennes, 1847)",,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n5,12,Tabela 1,Dourado,"Salminus brasiliensis (Cuvier, 1816)",,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n6,12,Tabela 1,Jaú,"Paulicea luetkeni (Steindachner, 1875)",,"Common name printed 'Jaú' here and in Tabela 5 p17, 'Jau' in Tabela 8 p26."
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n7,12,Tabela 1,Jurupensém,"Sorubim lima (Bloch & Schneider, 1801)",,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n8,12,Tabela 1,Jurupoca,"Hemisorubim platyrhynchos (Valenciennes, 1840)",,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n9,12,Tabela 1,Pacu,"Piaractus mesopotamicus (Holmberg, 1887)",,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n10,12,Tabela 1,Piavuçu,"Leporinus macrocephalus Garavelo & Britski, 1988",,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n11,12,Tabela 1,Pintado,"Pseudoplatystoma corruscans (Agassiz, 1829)",,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n12,12,Tabela 1,Piranha,"Pygocentrus nattereri Kner, 1860",1,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n13,12,Tabela 1,Piranha,"Serrasalmus maculatus Kner, 1858",,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n14,12,Tabela 1,Piranha,"Serrasalmus marginatus Valenciennes, 1847",,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n15,12,Tabela 1,Piraputanga,"Brycon hilarii (Valenciennes, 1850)",,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n16,12,Tabela 1,Tucunaré,"Cichla piquiti Kullander & Ferreira, 2006",3,
+albuquerque2010-scpesca-ms-2007-pantanal,albuquerque2010-scpesca-ms-2007-pantanal#n17,12,Tabela 1,Outras,Outras espécies,,"Catch-all line, not a scientific name."
+castro2009-producao-pesqueira-billings-sp,castro2009-producao-pesqueira-billings-sp#n1,12,Tabela 5,Acará,Geophagus brasiliensis,,"Família Cichlidae; outros nomes: Acará-topete, acaraí"
+castro2009-producao-pesqueira-billings-sp,castro2009-producao-pesqueira-billings-sp#n2,12,Tabela 5,Tilápia,Oreochromis niloticus,,"Família Cichlidae; impresso ""Oreochromis niloticus e""; outros nomes: Tilápia do Nilo e tilápia negra"
+castro2009-producao-pesqueira-billings-sp,castro2009-producao-pesqueira-billings-sp#n3,12,Tabela 5,Tilápia,Tilapia. rendalli,,"Segundo nome sob Tilápia, com ponto após Tilapia como impresso"
+castro2009-producao-pesqueira-billings-sp,castro2009-producao-pesqueira-billings-sp#n4,12,Tabela 5,Lambari,Astyanax sp.,,"Família Characidae. Texto p7 imprime ""Astyanax sp""."
+castro2009-producao-pesqueira-billings-sp,castro2009-producao-pesqueira-billings-sp#n5,12,Tabela 5,Traíra,Hoplias malabaricus,,"Família Erythrinidae; outros nomes: Dorme-dorme, lobó, trairitinga"
+castro2009-producao-pesqueira-billings-sp,castro2009-producao-pesqueira-billings-sp#n6,12,Tabela 5,Carpa,Ciprinus carpio,,"Família Cyprinidae. Grafia difere do texto p7 ""Cyprinus carpio""."
+castro2009-producao-pesqueira-billings-sp,castro2009-producao-pesqueira-billings-sp#n7,12,Tabela 5,Bagre,Rhamdia sp.,,"Família Pimelodidae; outros nomes: Catfish, jundiá"
+castro2009-producao-pesqueira-billings-sp,castro2009-producao-pesqueira-billings-sp#n8,12,Tabela 5,Cascudo,Hypostomus sp.,,"Família Loricariidae. Texto p7 imprime ""Hypostomus sp""."
+mai2010-currais-piaui,mai2010-currais-piaui#n1,1,text,parum,Chaetodipterus faber,,
+mai2010-currais-piaui,mai2010-currais-piaui#n2,1,text,sardinha,Opisthonema oglinum,,
+mai2010-currais-piaui,mai2010-currais-piaui#n3,1,text,espada,Trichiurus lepturus,,
+mai2010-currais-piaui,mai2010-currais-piaui#n4,1,text,galo,Selene vomer,,
+mai2010-currais-piaui,mai2010-currais-piaui#n5,1,text,"camurupim, tarpon",Megalops atlanticus,,
+mai2010-currais-piaui,mai2010-currais-piaui#n6,1,text,raia-da-pedra,Dasyatis guttata,,Printed 'raia-da-' and 'pedra' across a line break.
+mai2010-currais-piaui,mai2010-currais-piaui#n7,1,text,chancarona,Lobotes surinamensis,,
+mai2010-currais-piaui,mai2010-currais-piaui#n8,1,text,pescada-branca,Cynoscion microlepidotus,,
+mai2010-currais-piaui,mai2010-currais-piaui#n9,1,text,pelombeta,Chloroscombrus chrysurus,,
+martins2013-desembarque-tijucas-sc,martins2013-desembarque-tijucas-sc#n1,5,Tabela 1,Cangoá,Stellifer sp.,,
+martins2013-desembarque-tijucas-sc,martins2013-desembarque-tijucas-sc#n2,5,Tabela 1,Galo,Selene sp.,,
+martins2013-desembarque-tijucas-sc,martins2013-desembarque-tijucas-sc#n3,5,Tabela 1,Gordinho,Peprilus paru,,
+martins2013-desembarque-tijucas-sc,martins2013-desembarque-tijucas-sc#n4,5,Tabela 1,Linguado,Paralichthys sp.,,
+martins2013-desembarque-tijucas-sc,martins2013-desembarque-tijucas-sc#n5,5,Tabela 1,Manezinho,Caranx crysus,,
+martins2013-desembarque-tijucas-sc,martins2013-desembarque-tijucas-sc#n6,5,Tabela 1,Manjuva,Engraulidae,,Printed 'Família Engraulidae'; rank word dropped
+martins2013-desembarque-tijucas-sc,martins2013-desembarque-tijucas-sc#n7,5,Tabela 1,Maria-luíza/Veva,Paralonchurus brasiliensis,,
+martins2013-desembarque-tijucas-sc,martins2013-desembarque-tijucas-sc#n8,5,Tabela 1,Palombeta,Chloroscombrus chrysurus,,
+martins2013-desembarque-tijucas-sc,martins2013-desembarque-tijucas-sc#n9,5,Tabela 1,Pampo,Trachinotus falcatus,,
+martins2013-desembarque-tijucas-sc,martins2013-desembarque-tijucas-sc#n10,5,Tabela 1,Pampo-amarelo,Trachinotus carolinus,,
+martins2013-desembarque-tijucas-sc,martins2013-desembarque-tijucas-sc#n11,5,Tabela 1,Paru,Pomacanthus arcuatus,,
+martins2013-desembarque-tijucas-sc,martins2013-desembarque-tijucas-sc#n12,5,Tabela 1,Savelha,Brevoortia sp.,,
