@@ -2,6 +2,8 @@
 
 Versão em português: [README.pt-BR.md](README.pt-BR.md)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23680350.svg)](https://doi.org/10.5281/zenodo.23680350)
+
 1,672 records taken from the tables and text of 8 publications printed in Portuguese between 2004 and 2013. 1,458 are landing and catch records from 5 documents: the SCPESCA/MS 2007 bulletin of professional and sport fishing in the Pantanal (MS), artisanal fishing in the Billings reservoir in 2005-2007 (SP), landings at the port of Tefé from January to June 2012 (AM), the catch of 3 fish weirs on the coast of Piauí (PI) and artisanal gillnet landings at Tijucas (SC). 214 are treatment means from 3 aquaculture trials: tambaqui at 4 stocking densities in net cages (AM), 3 tilapia strains in raceways (AL) and jundiá in a 2 x 2 trial of stocking density and feeding frequency (RS). Each row is one printed cell or one number of the text, with the page and table it came from.
 
 These numbers were printed as bulletins, technical reports, conference papers and journal articles, and none of them exists in structured form. Each document was checked before it was transcribed against FAO FishStat, the national fisheries bulletins, IBGE SIDRA, dados.gov.br and DataCite, and none of the 8 had its data there. FishStat has Brazil as one number per species and year; this dataset gives river, landing site, month and fleet for the places and years above.

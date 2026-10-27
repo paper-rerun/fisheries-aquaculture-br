@@ -2,6 +2,8 @@
 
 English version: [README.md](README.md)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23680350.svg)](https://doi.org/10.5281/zenodo.23680350)
+
 1.672 registros tirados das tabelas e do texto de 8 publicações em português impressas entre 2004 e 2013. 1.458 são registros de desembarque e captura de 5 documentos: o boletim SCPESCA/MS 2007 da pesca profissional e esportiva no Pantanal (MS), a pesca artesanal na represa Billings em 2005-2007 (SP), o desembarque no porto de Tefé de janeiro a junho de 2012 (AM), a captura de 3 currais no litoral do Piauí (PI) e o desembarque da pesca artesanal de emalhe em Tijucas (SC). 214 são médias de tratamento de 3 ensaios de aquicultura: tambaqui em 4 densidades de estocagem em tanque-rede (AM), 3 linhagens de tilápia em raceway (AL) e jundiá num ensaio 2 x 2 de densidade de estocagem e frequência alimentar (RS). Cada linha é uma célula impressa ou um número do texto, com a página e a tabela de onde saiu.
 
 Esses números foram impressos como boletins, relatórios técnicos, trabalhos de congresso e artigos de periódico, e nenhum deles existe em forma estruturada. Antes de ser transcrito, cada documento foi conferido no FAO FishStat, nos boletins nacionais de estatística da pesca, no IBGE SIDRA, no dados.gov.br e no DataCite, e nenhum dos 8 tinha os seus dados lá. O FishStat tem o Brasil como um número por espécie e ano; este dataset dá rio, local de desembarque, mês e frota para os lugares e anos acima.
