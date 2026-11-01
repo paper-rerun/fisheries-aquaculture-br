@@ -1,7 +1,7 @@
 {
-  "title": "Fish landings and aquaculture trials in Brazil: 1,672 records from 8 publications (pilot)",
+  "title": "Fish landings and aquaculture trials in Brazil: 6,567 records from 28 publications",
   "upload_type": "dataset",
-  "description": "1,672 records transcribed from the tables and text of 8 Portuguese-language publications printed between 2004 and 2013. 1,458 landing and catch records from 5 documents: the SCPESCA/MS 2007 bulletin of professional and sport fishing in the Pantanal (MS), artisanal fishing in the Billings reservoir in 2005-2007 (SP), landings at the port of Tefé in January to June 2012 (AM), the catch of 3 fish weirs on the coast of Piauí in 2008-2009 (PI) and artisanal gillnet landings at Tijucas in 2010-2011 (SC). 214 treatment means from 3 aquaculture trials: tambaqui at 4 stocking densities in net cages (AM), 3 tilapia strains in raceways (AL) and jundiá in a 2 x 2 trial of stocking density and feeding frequency in net cages (RS). Landing records join 80 strata (study, landing site, capture area, vessel type, fishery, data source) on doc_id and stratum_ids; trial records join 3 trials on doc_id and trial_id. Species names, units and periods are kept exactly as printed, with common and scientific names in separate fields; the 46 species key pairs printed in the documents are a separate file. Printed totals are kept as records flagged as totals, never recomputed, and checked against their parts: of 186 totals, 167 add up exactly, 10 within rounding, 7 do not add up in the source and 2 cannot be checked. Each document was checked as not available in structured form (FAO FishStat, national bulletins, IBGE SIDRA, dados.gov.br, DataCite) before transcription. Each document was transcribed twice, independently, by AI agents, and every disagreement was settled against the PDF; no number and no name was misread in the 1,665 paired records. A human reviewed the result before publication. Pilot of 8 documents; part of the Paper Rerun project (Open Tables).",
+  "description": "6,567 records transcribed from the tables and text of 28 Portuguese-language publications (2000-2020): 5,546 landing and catch records from 17 documents (Pantanal, Amazon, Araguaia, São Paulo and Paraná reservoirs, Lagoa dos Patos, and the coast from Pará to Santa Catarina; by species, river, landing site, month, gear and fleet) and 1,021 results of 14 aquaculture trials (tambaqui, matrinxã, tambatinga, tilapia, jundiá, cachara, pacu, carp). Files: landings, strata, trials, aquaculture records, species key and sources, with the page and table of every number. Names, periods and units are kept as printed; printed totals are kept and checked against their parts (14 errors of the sources listed). None of the documents had its data in structured form (checked against FAO FishStat, national bulletins, IBGE SIDRA, dados.gov.br, DataCite and Redape). Each document was transcribed twice, independently, by AI agents, and every disagreement (6,298) was settled against the PDF. A human reviewed the result before publication. Version 2.0.0 adds a round of 20 documents to the 8-document pilot (v1.0.0). Part of the Paper Rerun project (Open Tables).",
   "creators": [
     {
       "name": "Tessaro, Filipe"
@@ -21,5 +21,6 @@
     "Embrapa",
     "open data",
     "AI agents"
-  ]
+  ],
+  "version": "2.0.0"
 }

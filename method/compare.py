@@ -1,6 +1,6 @@
-# Compare the two blind transcriptions of the fisheries and aquaculture pilot (A/*.json and B/*.json, schema
-# pesca-1.0-pilot: {strata, trials, species_key, tables, records, end_checklist})
-# Output: method/diff_<doc_id>.csv (or diff.csv for every doc in both folders) with strata and trial disagreements
+# Compare the two blind transcriptions of a fisheries and aquaculture round (A/*.json and B/*.json, schema 2.0, and the
+# pilot's pesca-1.0-pilot files: {strata, trials, species_key, tables, records, end_checklist})
+# Output: <out>/diff_<doc_id>.csv (or diff.csv for every doc in both folders) with strata and trial disagreements
 # first, then species key, table, label and column disagreements, then every record field disagreement and every
 # record present on one side only
 #
@@ -17,8 +17,16 @@
 # - text copied as printed is compared exactly (spaces collapsed); other text loosely (norm)
 # - the prefix column says when one side's text is the start of the other's (biodiversity lesson 2: 112 cut fields)
 # - end_checklist is not compared, it is recomputed from the final records
+# Schema 2.0 (pesca-piloto/RODADA.md, changes 1, 2 and 13):
+# - a landing statistic left null is single_value, on the column and on the record, before anything is compared
+# - the label page of a stratum is not compared in field_pages (a stub label needs no page there)
+# - a text block has one implicit column: its columns are not paired and its records pair by the number cited, not by
+#   row_index or column, and every record field is compared on the record
+# Field lists come from the 2.0 schema next to this script (../schema.json) whatever --root is; a field a 1.0 file
+# lacks reads as null on both sides
 #
-# Usage: python compare.py [doc_id ...]   (paths are relative to this file); python compare.py --check runs the asserts
+# Usage: py -3.12 -I compare.py [doc_id ...] [--root DIR] [--out DIR]   (A/ and B/ under --root, default the folder above
+# this script; output to --out, default <root>/method); py -3.12 -I compare.py --check runs the asserts only
 import csv
 import difflib
 import glob
@@ -30,8 +38,6 @@ import unicodedata
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-A_DIR = os.path.join(ROOT, "A")
-B_DIR = os.path.join(ROOT, "B")
 
 with open(os.path.join(ROOT, "schema.json"), encoding="utf-8") as schema_handle:
 	SCHEMA_DEFS = json.load(schema_handle)["$defs"]
@@ -57,7 +63,7 @@ EXACT_FIELDS = {"value_as_printed", "row_label_as_printed", "header_as_printed",
 	"species_scientific_as_printed", "scientific_name_in_full_as_printed", "common_name_as_printed", "scientific_name_as_printed",
 	"family_as_printed", "dispersion_as_printed", "footnote_marker", "significance_letter", "treatment", "treatment_code",
 	"stratum_label_as_printed", "verbatimCoordinates", "period_as_printed", "factor_level"}
-VALUE_FIELDS = {"value", "value_as_printed", "value_kind"}
+VALUE_FIELDS = {"value", "value_as_printed", "value_kind", "value_min", "value_max"}
 NAME_FIELDS = {"species_common_as_printed", "species_scientific_as_printed", "common_name_as_printed", "scientific_name_as_printed",
 	"scientific_name_in_full_as_printed"}
 
@@ -87,6 +93,7 @@ LANDING_INHERITED = {
 	"record_origin": [("labels", "record_origin")],
 }
 MIN_RECORD_SCORE = 2.5
+LANDING_DEFAULT_STATISTIC = "single_value"
 
 
 def norm(text):
@@ -109,6 +116,11 @@ def exact(text):
 
 def norm_label(text):
 	return re.sub(r"^(?:fig(?:ura)?|tab(?:ela)?)\b", lambda match: "figura" if match.group(0).startswith("f") else "tabela", norm(text))
+
+
+def is_text(table_or_record):
+	# A text block, by its label ('text') or its kind
+	return norm_label(table_or_record.get("label", table_or_record.get("table_or_figure"))) == "text" or table_or_record.get("kind") == "text"
 
 
 def similarity(a, b):
@@ -302,9 +314,11 @@ def compare_tables(doc_id, data_a, data_b):
 		else:
 			label_fields = LANDING_LABEL_FIELDS if labels_a.get("labels_kind") == "landings" else TRIAL_LABEL_FIELDS
 			fields += [("table_level_labels." + field, labels_a.get(field), labels_b.get(field)) for field in label_fields]
-		column_pairs = pair_columns(table_a, table_b, records_a, records_b)
-		columns_b = {column["column_id"]: column for column in table_b.get("columns") or []}
-		for column_a in table_a.get("columns") or []:
+		# A text block has one implicit column (rule 22): its variables, units and statistics are compared on the records
+		text_block = is_text(table_a) and is_text(table_b)
+		column_pairs = {} if text_block else pair_columns(table_a, table_b, records_a, records_b)
+		columns_b = {} if text_block else {column["column_id"]: column for column in table_b.get("columns") or []}
+		for column_a in [] if text_block else table_a.get("columns") or []:
 			column_b = columns_b.pop(column_pairs.get(column_a["column_id"]), None)
 			if column_b is None:
 				rows.append(row(doc_id, table_a["page"], table_a["label"], "only_in_A", "column", table_a["table_id"] + "." + column_a["column_id"], ""))
@@ -336,6 +350,12 @@ def fill_effective(data):
 	# Write the inherited value into every null record field, so A and B are compared on what the record means
 	trials_by_id = {trial["trial_id"]: trial for trial in data["trials"]}
 	tables_by_id = {table["table_id"]: table for table in data["tables"]}
+	# Landings: a null statistic is single_value (rule 16), so 'single_value' against null is no difference
+	if data.get("document_kind") == "landings":
+		for table in data["tables"]:
+			for column in table.get("columns") or []:
+				if column.get("statistic") is None:
+					column["statistic"] = LANDING_DEFAULT_STATISTIC
 	for record in data["records"]:
 		table = tables_by_id.get(record.get("table_id")) or {}
 		sources = {
@@ -353,6 +373,9 @@ def fill_effective(data):
 					record[field] = sources[source][source_field]
 					record["_inherited"].add(field)
 					break
+		if record.get("record_type") == "landing" and record.get("statistic") is None:
+			record["statistic"] = LANDING_DEFAULT_STATISTIC
+			record["_inherited"].add("statistic")
 
 
 def record_label(record):
@@ -361,7 +384,18 @@ def record_label(record):
 	return " / ".join(str(part) for part in (record.get("row_label_as_printed"), record.get("treatment")) if part)
 
 
+def same_number(a, b):
+	if exact(a.get("value_as_printed")) and exact(a.get("value_as_printed")) == exact(b.get("value_as_printed")):
+		return True
+	return a.get("value") is not None and a.get("value") == b.get("value")
+
+
 def record_pair_score(a, b):
+	if is_text(a) and is_text(b):
+		# Text: the number cited first, then the words around it; position and column mean nothing (rule 22)
+		score = 3.0 if same_number(a, b) else 0.0
+		score += 2.0 * similarity(a.get("row_label_as_printed"), b.get("row_label_as_printed"))
+		return score + (0.5 if a.get("variable_standardized") == b.get("variable_standardized") else 0.0)
 	score = 3.0 * similarity(a.get("row_label_as_printed"), b.get("row_label_as_printed"))
 	score += 1.0 if a.get("column_id") == b.get("column_id") else 0.0
 	score += 1.0 if a.get("row_index") == b.get("row_index") else 0.0
@@ -464,11 +498,11 @@ def compare_species_key(doc_id, key_a, key_b):
 	return rows
 
 
-def compare_document(name):
+def compare_document(name, root=ROOT):
 	doc_id = name[:-5]
-	with open(os.path.join(A_DIR, name), encoding="utf-8") as handle:
+	with open(os.path.join(root, "A", name), encoding="utf-8") as handle:
 		data_a = json.load(handle)
-	with open(os.path.join(B_DIR, name), encoding="utf-8") as handle:
+	with open(os.path.join(root, "B", name), encoding="utf-8") as handle:
 		data_b = json.load(handle)
 	rows = []
 	for field in ("document_kind", "schema_version"):
@@ -483,6 +517,10 @@ def compare_document(name):
 	original_b_ids = {mapped(new_stratum_for_b, stratum["stratum_id"]): stratum["stratum_id"] for stratum in data_b["strata"]}
 	original_b_ids.update({mapped(new_trial_for_b, trial["trial_id"]): trial["trial_id"] for trial in data_b["trials"]})
 	rewrite_b_ids(new_stratum_for_b, new_trial_for_b, data_b)
+	# The page of a stratum label is optional in field_pages (rule 6): never a difference
+	for stratum in data_a["strata"] + data_b["strata"]:
+		if isinstance(stratum.get("field_pages"), dict):
+			stratum["field_pages"] = {field: page for field, page in stratum["field_pages"].items() if field != "stratum_label_as_printed"}
 	rows += compare_blocks(doc_id, "strata", data_a["strata"], data_b["strata"], "stratum_id", STRATUM_FIELDS, original_b_ids)
 	rows += compare_blocks(doc_id, "trials", data_a["trials"], data_b["trials"], "trial_id", TRIAL_FIELDS, original_b_ids)
 	# Tables second (they rewrite the B table ids), then the species key and the records
@@ -493,8 +531,8 @@ def compare_document(name):
 	for score, ia, ib in pairs:
 		a, b = records_a[ia], records_b[ib]
 		fields = LANDING_RECORD_FIELDS if a.get("record_type") == "landing" else TRIAL_RECORD_FIELDS
-		# A field both sides inherited is already one row at its trial, table or column
-		inherited_both = a["_inherited"] & b["_inherited"]
+		# A field both sides inherited is already one row at its trial, table or column; text columns are not compared
+		inherited_both = set() if is_text(a) else a["_inherited"] & b["_inherited"]
 		for field in fields:
 			if field in inherited_both:
 				continue
@@ -513,16 +551,18 @@ def compare_document(name):
 	return rows, len(records_a), len(records_b), len(pairs)
 
 
-def main(doc_ids):
+def main(doc_ids, root=ROOT, out_dir=None):
+	out_dir = out_dir or os.path.join(root, "method")
+	os.makedirs(out_dir, exist_ok=True)
 	if doc_ids:
 		names = [doc_id + ".json" for doc_id in doc_ids]
-		out_path = os.path.join(HERE, "diff_%s.csv" % doc_ids[0]) if len(doc_ids) == 1 else os.path.join(HERE, "diff_selected.csv")
+		out_path = os.path.join(out_dir, "diff_%s.csv" % doc_ids[0]) if len(doc_ids) == 1 else os.path.join(out_dir, "diff_selected.csv")
 	else:
-		names = sorted(os.path.basename(p) for p in glob.glob(os.path.join(A_DIR, "*.json")) if os.path.exists(os.path.join(B_DIR, os.path.basename(p))))
-		out_path = os.path.join(HERE, "diff.csv")
+		names = sorted(os.path.basename(p) for p in glob.glob(os.path.join(root, "A", "*.json")) if os.path.exists(os.path.join(root, "B", os.path.basename(p))))
+		out_path = os.path.join(out_dir, "diff.csv")
 	out_rows = []
 	for name in names:
-		rows, count_a, count_b, count_pairs = compare_document(name)
+		rows, count_a, count_b, count_pairs = compare_document(name, root)
 		out_rows += rows
 		print("%s: A records %d, B records %d, matched pairs %d, diff rows %d" % (name[:-5], count_a, count_b, count_pairs, len(rows)))
 	with open(out_path, "w", encoding="utf-8", newline="") as handle:
@@ -569,9 +609,33 @@ def self_check():
 	record = data["records"][0]
 	assert record["statistic"] == "mean" and record["duration_as_printed"] == "160 dias" and record["unit"] == "g"
 	assert record["_inherited"] == {"statistic", "duration_as_printed", "variable_as_printed"}
+	# Landings: null and single_value are the same statistic, on the column and on the record
+	landing_column = {"column_id": "c2", "header_as_printed": "Mar.", "statistic": None}
+	data = {"document_kind": "landings", "trials": [], "tables": [{"table_id": "k1", "table_level_labels": {}, "columns": [landing_column]}],
+		"records": [{"record_type": "landing", "table_id": "k1", "column_id": "c2", "statistic": None}, {"record_type": "landing", "table_id": "k1", "column_id": "c9", "statistic": None}]}
+	fill_effective(data)
+	assert landing_column["statistic"] == "single_value" and [r["statistic"] for r in data["records"]] == ["single_value", "single_value"]
+	# Text records pair by the number they cite, even one row off and in another column
+	text_a = [{"record_type": "landing", "table_id": "k5", "page": 4, "table_or_figure": "text", "column_id": "c1", "row_index": index + 1,
+		"row_label_as_printed": label, "value_as_printed": printed, "value": None} for index, (label, printed) in enumerate([("diferentes pescadores", "20"), ("dias", "6,0"), ("desvio padrão", "1,5")])]
+	text_b = [dict(text_a[2], row_index=2, column_id="c3"), dict(text_a[1], row_index=1, column_id="c2"), dict(text_a[0], row_index=3, column_id="c7")]
+	pairs, only_a, only_b = pair_records(text_a, text_b)
+	assert [(ia, ib) for score, ia, ib in pairs] == [(0, 2), (1, 1), (2, 0)] and not only_a and not only_b
+	# A text value misread still pairs on its words; a different number with other words does not
+	assert record_pair_score(text_a[0], dict(text_a[0], value_as_printed="26")) >= MIN_RECORD_SCORE
+	assert record_pair_score(text_a[0], text_a[2]) < MIN_RECORD_SCORE
+
+
+def option(name, default=None):
+	# '--root DIR' and '--out DIR'
+	if name in sys.argv:
+		return sys.argv[sys.argv.index(name) + 1]
+	return default
 
 
 if __name__ == "__main__":
 	self_check()
 	if "--check" not in sys.argv:
-		main([arg for arg in sys.argv[1:] if not arg.startswith("--")])
+		root, out_dir = os.path.abspath(option("--root", ROOT)), option("--out")
+		values = {option("--root"), option("--out")}
+		main([arg for arg in sys.argv[1:] if not arg.startswith("--") and arg not in values], root, out_dir and os.path.abspath(out_dir))

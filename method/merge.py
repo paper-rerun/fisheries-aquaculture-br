@@ -1,6 +1,16 @@
 # Merge the adjudicated documents into landings.csv, strata.csv, aquaculture.csv, trials.csv and qa/decisions.csv, check
-# the printed totals against their parts (qa/totals_check.csv, a check only), and print the pilot numbers for RODADA.md
-# Usage: python -X utf8 method/merge.py   (paths are relative to the pesca-piloto folder)
+# the printed totals against their parts (qa/totals_check.csv, a check only), and print the numbers for RODADA.md
+# Usage: py -3.12 -I method/merge.py [--root DIR] [--out DIR] [--allow-missing-summary]
+#   --root: the round folder with sources.json, pdfs, A/, B/ and adjudicated/ (default: the folder above this script)
+#   --out: where the CSVs and qa/ go (default: --root)
+#   --allow-missing-summary: a document without adjudicated/<doc_id>_summary.json is merged without the pair check
+#   (only for the pilot, whose adjudicators wrote no summary file)
+#
+# Schema 2.0 (pesca-piloto/RODADA.md): strata.csv gets label_page (field_pages, else the first record of the stratum,
+# change 2); landings.csv and aquaculture.csv get unit_standardized, the printed unit in one spelling with the value
+# untouched (change 9); the expected A/B pairs come from adjudicated/<doc_id>_summary.json ("pairs") instead of a table
+# in this file; the adjudication provenance (origin, decision_ids, adjudicated_on, origin_rule) is read and kept. Field
+# lists come from the 2.0 schema next to this script; a pilot (pesca-1.0-pilot) file reads the 2.0 fields as null
 #
 # Copied from batata/method/merge.py for the fisheries and aquaculture pilot (schema pesca-1.0-pilot), with the event
 # inheritance of biodiversidade-piloto/method/merge.py. Changed: two kinds of document. Landing documents give strata.csv
@@ -17,15 +27,33 @@ import os
 import re
 import subprocess
 import sys
+import unicodedata
 from collections import Counter, defaultdict
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "method"))
+HERE = os.path.dirname(os.path.abspath(__file__))
+SCHEMA_PATH = os.path.join(os.path.dirname(HERE), "schema.json")
+sys.path.insert(0, HERE)
 import compare  # noqa: E402  only for the compared field lists and the inheritance chains
+
+
+def Option(name, default=None):
+	# '--root DIR' and '--out DIR'
+	if name in sys.argv:
+		return os.path.abspath(sys.argv[sys.argv.index(name) + 1])
+	return default
+
+
+ROOT = Option("--root", os.path.dirname(HERE))
+OUT = Option("--out", ROOT)
+ALLOW_MISSING_SUMMARY = "--allow-missing-summary" in sys.argv
+# Fields schema 2.0 added to records; a pilot file does not have them
+NEW_IN_2 = ("value_min", "value_max", "period_source_page")
+PILOT_VERSION = "pesca-1.0-pilot"
 MAX_QUOTE_WORDS = 15
 LANDING_DEFAULT_STATISTIC = "single_value"
 
-# Licence situation per document, read from sources.json (license_shown, license_scope, publisher_copyright_in_pdf)
+# Licence situation per pilot document, read from sources.json (license_shown, license_scope, publisher_copyright_in_pdf).
+# A document of a later round takes license_note from its sources.json entry
 REPOSITORY_FOOTER = "CC BY-NC-ND 4.0 (aviso geral do repositório {repo}, não é licença do item)"
 LICENSE = {
 	"albuquerque2010-scpesca-ms-2007-pantanal": REPOSITORY_FOOTER.format(repo="Infoteca-e") + "; o PDF imprime 'Todos os direitos reservados' (Embrapa Pantanal, p3)",
@@ -36,13 +64,31 @@ LICENSE = {
 	"brandao2004-tambaqui-densidade-tanques-rede-am": REPOSITORY_FOOTER.format(repo="Alice") + "; artigo de periódico, valem os termos da revista (não conferidos)",
 	"cartaxo2010-linhagens-tilapia-baixo-sao-francisco": REPOSITORY_FOOTER.format(repo="Alice") + "; trabalho em anais, valem os termos do evento (não conferidos)",
 	"martinelli2013-jundia-densidade-frequencia-tanques-rede": REPOSITORY_FOOTER.format(repo="Alice") + "; artigo de periódico, valem os termos da revista (não conferidos)",
+	# Round of 20 (pesca, 2026-11-01), from the same sources.json fields
+	"moraes2001-iscas-vivas-corumba-ms": REPOSITORY_FOOTER.format(repo="Infoteca-e") + "; o PDF imprime 'Copyright Embrapa 2001' (p4)",
+	"silva2017-producao-artesanal-araguaia-to": REPOSITORY_FOOTER.format(repo="Infoteca-e") + "; o PDF imprime 'Todos os direitos reservados' (Embrapa 2017, p4)",
+	"tavaresdias2020-peixes-ornamentais-amapa": REPOSITORY_FOOTER.format(repo="Infoteca-e") + "; o PDF imprime 'Todos os direitos reservados' (Embrapa Amapá, p4)",
+	"miranda2007-tainha-desembarcada-sp": "nenhuma licença nem termo de uso impresso (Série Relatórios Técnicos do Instituto de Pesca, página e PDF; PDF com senha de dono); tratado como todos os direitos reservados",
+	"maruyama2010-producao-medio-tiete-sp": "nenhuma licença nem termo de uso impresso (Série Relatórios Técnicos do Instituto de Pesca, página e PDF); tratado como todos os direitos reservados",
+	"santos2016-miragaia-lagoa-dos-patos-rs": "'Copyright (c) 2016 Boletim do Instituto de Pesca' na página do artigo, sem Creative Commons; tratado como todos os direitos reservados",
+	"okada2012-itaipu-composicao-pescado-pr": "nenhuma licença nem termo na pasta FTP do Nupélia nem no PDF do capítulo (a folha de rosto não foi conferida); tratado como todos os direitos reservados",
+	"espiritosanto2012-desembarques-braganca-pa": "CC BY 4.0 (licença da revista no rodapé do Boletim do Laboratório de Hidrobiologia; a página do item não abriu)",
+	"almeida2011-pescada-amarela-raposa-ma": "CC BY 4.0 (licença da revista no rodapé do Boletim do Laboratório de Hidrobiologia; a página do item não abriu)",
+	"nobrega2007-frota-artesanal-nordeste": "nenhuma licença impressa (página da revista Arquivos de Ciências do Mar e PDF); tratado como todos os direitos reservados",
+	"novaes2015-pesca-reservatorio-santa-cruz-rn": "'Copyright (c) 2018 Boletim do Instituto de Pesca' na página do artigo, sem Creative Commons; tratado como todos os direitos reservados",
+	"santanna2020-mercado-cai-nagua-ro": "cópia no site do grupo de pesquisa da UNIR; a licença da revista não foi conferida; tratado como todos os direitos reservados",
+	"brandao2005-matrinxa-densidade-tanques-rede-am": REPOSITORY_FOOTER.format(repo="Alice") + "; valem os termos da publicação original (não conferidos)",
+	"yoshioka2015-tambatinga-soja-milho-ap": REPOSITORY_FOOTER.format(repo="Alice") + "; valem os termos da publicação original (não conferidos)",
+	"lima2016-tilapia-larvas-densidade-vitamina-c-pe": REPOSITORY_FOOTER.format(repo="Alice") + "; valem os termos da publicação original (não conferidos)",
+	"nascimento2013-cachara-tanques-rede-pantanal-ms": REPOSITORY_FOOTER.format(repo="Infoteca-e") + "; o PDF imprime 'Todos os direitos reservados' (Embrapa Pantanal 2013, p3)",
+	"hisano2011-tilapia-parte-aerea-mandioca-ms": REPOSITORY_FOOTER.format(repo="Infoteca-e") + "; o PDF imprime 'Todos os direitos reservados' (Embrapa Agropecuária Oeste, p3)",
+	"bergamin2011-carpa-hungara-fontes-proteicas-rs": REPOSITORY_FOOTER.format(repo="Alice") + "; valem os termos da publicação original (não conferidos)",
+	"rodrigues2010-pacu-fibra-sp": REPOSITORY_FOOTER.format(repo="Alice") + "; valem os termos da publicação original (não conferidos)",
+	"romagosa2000-tilapia-dois-lotes-vale-do-ribeira-sp": "nenhuma licença nem termo de uso impresso (Série Relatórios Técnicos do Instituto de Pesca, página e PDF); tratado como todos os direitos reservados",
 }
 
-# Pairs per document in the adjudication summaries, checked against A minus the A-only records
-EXPECTED_PAIRS = {"albuquerque2010-scpesca-ms-2007-pantanal": 441, "castro2009-producao-pesqueira-billings-sp": 490,
-	"mamiraua2012-desembarque-tefe-am": 181, "mai2010-currais-piaui": 237, "martins2013-desembarque-tijucas-sc": 102,
-	"brandao2004-tambaqui-densidade-tanques-rede-am": 72, "cartaxo2010-linhagens-tilapia-baixo-sao-francisco": 30,
-	"martinelli2013-jundia-densidade-frequencia-tanques-rede": 112}
+# The pairs per document come from the adjudicator's summary, adjudicated/<doc_id>_summary.json {"pairs": n, ...}, and are
+# checked against A minus the A-only records
 # martins2013: compare.py paired the p4 text records one row off; the adjudicator wrote these one-sided rows off as
 # "Pairing artifact" and re-compared the true pairs as R001-R054. They are not omissions
 ARTIFACT_EVIDENCE = "Pairing artifact"
@@ -68,11 +114,33 @@ NOT_SOURCE_TEXT = {"citation", "license", "record_id", "stratumID", "parentStrat
 
 NAME_FIELDS = {"species_common_as_printed", "species_scientific_as_printed", "scientific_name_in_full_as_printed",
 	"common_name_as_printed", "scientific_name_as_printed"}
-NUMBER_FIELDS = {"value", "value_as_printed", "dispersion_as_printed", "significance_letter"}
+NUMBER_FIELDS = {"value", "value_min", "value_max", "value_as_printed", "dispersion_as_printed", "significance_letter"}
 ONE_SIDED_UNITS = {"stratum": "stratum", "strat": "stratum", "trial": "trial", "table": "table", "column": "column",
 	"species_key_entry": "species_key"}
 SUM_KINDS = ("row_total", "column_total", "grand_total", "subtotal")
 SUMMARY_STATISTICS = {"mean", "median", "standard_deviation"}
+
+# The printed unit in one spelling (rule 16, change 9): never a conversion, kg stays kg and t stays t. Keys are the unit
+# lower case, without accents, spaces collapsed and none before a minus. A unit not listed gets "" and is printed at the end
+STANDARD_UNITS = {
+	"kg": "kg", "kg.": "kg", "quilograma": "kg", "quilogramas": "kg", "t": "t", "t.": "t", "ton": "t", "ton.": "t", "tonelada": "t",
+	"toneladas": "t", "g": "g", "grama": "g", "gramas": "g", "%": "%", "individuos": "individuals", "individuo": "individuals",
+	"unidade": "units", "unidades": "units", "desembarques": "landings", "dias": "days", "pescadores": "fishers", "especies": "species",
+	"localidades": "localities", "h": "h", "horas": "h", "m2": "m2", "cm": "cm", "mm": "mm", "mg/l": "mg/L", "mg dl-1": "mg/dL",
+	"g dl-1": "g/dL", "oc": "°C", "°c": "°C", "peixes/m3": "fish/m3", "g/m3": "g/m3", "kg/m3": "kg/m3", "% por dia": "%/day",
+	"r$": "BRL", "quilogramas por pano de rede de 50 m": "kg/50 m net panel", "kg de peixes/ano": "kg/year",
+	"g/m2.hora": "g/m2/h", "kg de pescado por pescador a cada dia": "kg/fisher/day", "troca total da agua/dia": "water exchanges/day",
+}
+
+
+def StandardUnit(unit):
+	if not unit:
+		return ""
+	key = unicodedata.normalize("NFKD", unit.replace("\u2212", "-").replace("\u2013", "-"))
+	key = "".join(character for character in key if not unicodedata.combining(character)).lower()
+	key = re.sub(r"\s+-", "-", re.sub(r"\s+", " ", key)).strip()
+	return STANDARD_UNITS.get(key, "")
+
 
 # Quotes: 'x', "x", ‘x’, “x”. The single quote must not touch a letter, so "B's" is not a quote
 QUOTE_PATTERN = re.compile(r"(?<![\w])'([^']{3,}?)'(?![\w])|\"([^\"]{3,}?)\"|‘([^’]+)’|“([^”]+)”")
@@ -193,8 +261,13 @@ def CellText(value):
 	return value
 
 
-def StratumRows(doc_id, strata, citation, license_text):
+def StratumRows(doc_id, strata, citation, license_text, records=()):
 	strata_by_id = {stratum["stratum_id"]: stratum for stratum in strata}
+	# A label read from a table stub has no page in field_pages (rule 6): the page of the first record of that stratum
+	first_record_page = {}
+	for record in records:
+		for stratum_id in record.get("stratum_ids") or []:
+			first_record_page.setdefault(stratum_id, record["page"])
 	rows = []
 	for stratum in strata:
 		row = {"stratumID": f"{doc_id}#{stratum['stratum_id']}",
@@ -202,6 +275,8 @@ def StratumRows(doc_id, strata, citation, license_text):
 		for field in compare.STRATUM_FIELDS + ["notes"]:
 			if field not in ("parent_stratum_id",):
 				row[field] = CellText(stratum[field])
+		label_page = (stratum["field_pages"] or {}).get("stratum_label_as_printed") or (first_record_page.get(stratum["stratum_id"]) if stratum["stratum_label_as_printed"] else None)
+		row["label_page"] = label_page or ""
 		# Null field: walk up to the first ancestor that prints it
 		inherited = []
 		for field in INHERITED_STRATUM_FIELDS:
@@ -350,7 +425,7 @@ def TotalsCheck(doc_id, records):
 
 
 def main():
-	schema = json.load(open(os.path.join(ROOT, "schema.json"), encoding="utf-8"))
+	schema = json.load(open(SCHEMA_PATH, encoding="utf-8"))
 	defs = schema["$defs"]
 	sources = json.load(open(os.path.join(ROOT, "sources.json"), encoding="utf-8"))
 	documents_by_id = {document["id"]: document for document in sources["documents"]}
@@ -358,22 +433,37 @@ def main():
 	shingles_by_doc = {}
 	stratum_rows, trial_rows, landing_rows, aquaculture_rows, totals_rows = [], [], [], [], []
 	stats = defaultdict(dict)
-	for adjudicated_path in sorted(glob.glob(os.path.join(ROOT, "adjudicated", "*.json"))):
+	expected_pairs, provenance = {}, {}
+	adjudicated_paths = [path for path in sorted(glob.glob(os.path.join(ROOT, "adjudicated", "*.json"))) if not path.endswith("_summary.json")]
+	for adjudicated_path in adjudicated_paths:
 		doc_id = os.path.basename(adjudicated_path)[:-5]
 		document = documents_by_id[doc_id]
 		shingles_by_doc[doc_id] = LoadPdfWordShingles(os.path.join(ROOT, document["pdf_path"]))
 		adjudicated = json.load(open(adjudicated_path, encoding="utf-8"))
 		assert adjudicated["doc_id"] == doc_id and adjudicated["document_kind"] == document["document_kind"], doc_id
+		# The adjudicator's summary gives the pairs this document must have
+		summary_path = os.path.join(ROOT, "adjudicated", doc_id + "_summary.json")
+		if os.path.exists(summary_path):
+			expected_pairs[doc_id] = json.load(open(summary_path, encoding="utf-8"))["pairs"]
+		else:
+			assert ALLOW_MISSING_SUMMARY, f"{doc_id}: no adjudicated/{doc_id}_summary.json with the pairs"
+		provenance[doc_id] = (adjudicated.get("adjudicated_on") or "", adjudicated.get("origin_rule") or "")
+		# A pilot file has no 2.0 record fields: they read as null
+		if adjudicated["schema_version"] == PILOT_VERSION:
+			for record in adjudicated["records"]:
+				for field in NEW_IN_2:
+					record.setdefault(field, None)
 		is_landings = adjudicated["document_kind"] == "landings"
 		# A landings document has no trials and an aquaculture document no strata (rule TWO KINDS OF DOCUMENT)
 		assert not (adjudicated["trials"] if is_landings else adjudicated["strata"]), doc_id
-		citation, license_text = BuildCitation(document), LICENSE[doc_id]
+		citation, license_text = BuildCitation(document), LICENSE.get(doc_id) or document.get("license_note")
+		assert license_text, f"{doc_id}: no licence text (license_note in sources.json)"
 
 		strata_by_id = {stratum["stratum_id"]: stratum for stratum in adjudicated["strata"]}
 		for stratum in adjudicated["strata"]:
 			assert all(field in stratum for field in defs["stratum"]["required"]), (doc_id, stratum.get("stratum_id"))
 			assert stratum["parent_stratum_id"] is None or stratum["parent_stratum_id"] in strata_by_id, (doc_id, stratum["stratum_id"])
-		stratum_rows += StratumRows(doc_id, adjudicated["strata"], citation, license_text)
+		stratum_rows += StratumRows(doc_id, adjudicated["strata"], citation, license_text, adjudicated["records"])
 		trials_by_id = {trial["trial_id"]: trial for trial in adjudicated["trials"]}
 		for trial in adjudicated["trials"]:
 			assert all(field in trial for field in defs["trial"]["required"]), (doc_id, trial.get("trial_id"))
@@ -409,6 +499,8 @@ def main():
 			for field in record_fields:
 				if field not in ("record_id", "record_type"):
 					row[field] = CellText(effective[field])
+				if field == "unit":
+					row["unit_standardized"] = StandardUnit(effective["unit"])
 			if is_landings:
 				row["stratum_ids"] = "; ".join(record["stratum_ids"])
 				row["stratum_labels"] = " | ".join(strata_by_id[stratum_id]["stratum_label_as_printed"] or "(estudo)" for stratum_id in record["stratum_ids"])
@@ -439,12 +531,12 @@ def main():
 
 	def WriteCsv(file_name, rows, columns=None):
 		columns = columns or list(rows[0].keys())
-		with open(os.path.join(ROOT, file_name), "w", encoding="utf-8", newline="") as output_file:
+		with open(os.path.join(OUT, file_name), "w", encoding="utf-8", newline="") as output_file:
 			writer = csv.DictWriter(output_file, fieldnames=columns)
 			writer.writeheader()
 			writer.writerows(rows)
 
-	os.makedirs(os.path.join(ROOT, "qa"), exist_ok=True)
+	os.makedirs(os.path.join(OUT, "qa"), exist_ok=True)
 	WriteCsv("strata.csv", stratum_rows)
 	WriteCsv("landings.csv", landing_rows)
 	WriteCsv("trials.csv", trial_rows)
@@ -550,7 +642,7 @@ def main():
 			# A table with a label, inventory or column error counts once
 			doc_stats[f"{side}_wrong_table"] = len(wrong[(side, "label")] | wrong[(side, "inventory")] | wrong[(side, "column")])
 		doc_stats["pairs"] = doc_stats["a_records"] - counts["a_only_records"]
-		assert doc_stats["pairs"] == EXPECTED_PAIRS[doc_id], (doc_id, doc_stats["pairs"])
+		assert doc_id not in expected_pairs or doc_stats["pairs"] == expected_pairs[doc_id], (doc_id, doc_stats["pairs"], expected_pairs.get(doc_id))
 		doc_stats["required"] = doc_stats["pairs"] + counts["A_record_omitted"] + counts["B_record_omitted"] - counts["both_record_omitted"]
 
 	totals = Counter()
@@ -572,6 +664,9 @@ def main():
 			f"{a_errors};{b_errors};{doc_stats.get('A_name_errors', 0)};{doc_stats.get('B_name_errors', 0)};"
 			f"{doc_stats.get('A_number_errors', 0)};{doc_stats.get('B_number_errors', 0)}")
 	print(dict(sorted(totals.items())))
+	for doc_id in sorted(stats):
+		print(f"pairs {doc_id}: {stats[doc_id]['pairs']}", f"(summary {expected_pairs[doc_id]})" if doc_id in expected_pairs else "(no summary, not checked)",
+			f"| adjudicated_on {provenance[doc_id][0]} | origin_rule {provenance[doc_id][1][:80]}")
 
 	# Accuracy per record, stratum, trial, table and key entry, counting omissions, with and without the largest document
 	largest_doc = max(stats, key=lambda doc_id: stats[doc_id]["required"])
@@ -626,6 +721,8 @@ def main():
 		print(f"{name} statistic:", Counter(row["statistic"] for row in rows).most_common())
 		print(f"{name} value_kind:", Counter(row["value_kind"] for row in rows).most_common())
 		print(f"{name} unit:", Counter(row["unit"] for row in rows).most_common(20))
+		print(f"{name} unit_standardized:", Counter(row["unit_standardized"] for row in rows).most_common(),
+			"| not standardized:", sorted({row["unit"] for row in rows if row["unit"] and not row["unit_standardized"]}))
 		print(f"{name} from text:", sum(1 for row in rows if row["table_or_figure"] == "text"),
 			"source_inconsistency (record):", sum(1 for row in rows if row["source_inconsistency"]),
 			"(record or table):", sum(1 for row in rows if row["source_inconsistency"] or row["table_source_inconsistency"]))
@@ -663,6 +760,10 @@ def main():
 	assert all((row["doc_id"], row["trial_id"]) in trial_keys for row in aquaculture_rows)
 	assert all(row["statistic"] for row in landing_rows)
 	assert len(decision_rows) == sum(sum(1 for _ in csv.DictReader(open(path, encoding="utf-8-sig"))) for path in glob.glob(os.path.join(ROOT, "adjudicated", "*_decisions.csv")))
+	# unit_standardized only respells: same unit, never another one
+	assert StandardUnit("Quilogramas") == StandardUnit("kg") == "kg" and StandardUnit("toneladas") == "t" and StandardUnit("mg dL \u22121") == "mg/dL"
+	assert StandardUnit("g/m\u00b2.hora") == "g/m2/h" and StandardUnit("") == "" and StandardUnit("unknown") == ""
+	assert all(row["unit_standardized"] == StandardUnit(row["unit"]) for row in landing_rows + aquaculture_rows)
 	# Every printed sum in the landing records reaches the totals check
 	assert len(totals_rows) == sum(1 for row in landing_rows if row["is_total"] is True and row["total_kind"] in SUM_KINDS)
 	# A 16-word copy is caught, a 15-word copy is not, and a 16-word quote is caught even when it is not in the PDF
@@ -686,8 +787,10 @@ def main():
 	test_strata[1].update(parent_stratum_id="s1")
 	test_strata[0].update(water_body_as_printed="rios Solimões, Japurá e Jutaí", sampling_effort_as_printed="4.268 guias")
 	test_strata[1].update(stratum_dimension="capture_area")
-	child = StratumRows("t", test_strata, "", "")[1]
+	test_strata[1].update(stratum_label_as_printed="Capivara (Paraná)", field_pages={})
+	child = StratumRows("t", test_strata, "", "", [{"page": 7, "stratum_ids": ["s2"]}, {"page": 8, "stratum_ids": ["s2"]}])[1]
 	assert child["period_as_printed"] == "no ano de 2007" and child["inherited"] == "period_as_printed:s1"
+	assert child["label_page"] == 7
 	assert child["verbatimCoordinates"] == "" and child["water_body_as_printed"] == "" and child["sampling_effort_as_printed"] == ""
 	# Totals: a row total adds its row's value cells, a column total its column's plain cells, a subtotal the cells above it
 	def TestRecord(row_index, column_id, value, role="value", total_kind=None, statistic=LANDING_DEFAULT_STATISTIC):

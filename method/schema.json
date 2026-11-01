@@ -1,32 +1,32 @@
 {
  "$schema": "https://json-schema.org/draft/2020-12/schema",
- "$id": "pesca-piloto/schema.json",
+ "$id": "pesca/schema.json",
  "title": "Brazilian fisheries landing statistics and aquaculture trials in Portuguese-language technical literature, one record per printed data cell",
- "version": "pesca-1.0-pilot",
- "description": "Fixed output format for every blind transcriber of the fisheries and aquaculture pilot of Open Tables. Each document gives one JSON object {doc_id, transcriber, schema_version, document_kind, strata, trials, species_key, tables, records, end_checklist}. A landings document fills strata[] (the survey, then each printed landing site, capture area, fleet, gear, vessel type or data source, with its fields and pages) and landing records: one per printed data cell, with the species as printed (common and scientific names in separate fields, never matched), the variable, unit, period and strata the cell refers to, and is_total for printed totals, which are kept and never recomputed. An aquaculture document fills trials[] (the trials block of batata/schema.json v8, rebuilt for fish culture) and trial records (treatment, species, system, stocking density, feed, duration, variable, value, unit, statistic, significance letter). Both share the inventory of every table and figure with a closed cell count, the table axes and labels declared before records, full headers, the species key, and the end-of-transcription checklist. The transcription copies what is printed and never computes, converts, infers or matches names. Carried over from the agricultural rounds and the biodiversity pilot (see changes_from_previous): inventory first, read from the rendered page, copy exactly as printed, illegible cells stay in, contradictions with both versions, page from the PDF, 15-word limit on quotes and as-printed context, two independent transcriptions with diff and adjudication. Source PDFs and record pages are in sources.json.",
+ "version": "2.0",
+ "description": "Fixed output format for every blind transcriber of the fisheries and aquaculture rounds of Open Tables (version 2.0, after the pilot of 8 documents). Each document gives one JSON object {doc_id, transcriber, schema_version, document_kind, strata, trials, species_key, tables, records, end_checklist}. A landings document fills strata[] (the survey, then each printed landing site, capture area, fleet, gear, vessel type or data source, with its fields and pages) and landing records: one per printed data cell, with the species as printed (common and scientific names in separate fields, never matched), the variable, unit, period and strata the cell refers to, and is_total for printed totals, which are kept and never recomputed. An aquaculture document fills trials[] (the trials block of batata/schema.json v8, rebuilt for fish culture) and trial records (treatment, species, system, stocking density, feed, duration, variable, value, unit, statistic, significance letter). Both share the inventory of every table and figure with a closed cell count, the table axes and labels declared before records, full headers, the species key, and the end-of-transcription checklist. The transcription copies what is printed and never computes, converts, infers or matches names. Carried over from the agricultural rounds and the biodiversity pilot (see changes_from_previous for what 2.0 changed from pesca-1.0-pilot): inventory first, read from the rendered page, copy exactly as printed, illegible cells stay in, contradictions with both versions, page from the PDF, 15-word limit on quotes and as-printed context, two independent transcriptions with diff and adjudication. Source PDFs and record pages are in sources.json.",
  "rules": [
   "1 SCOPE. Inventory and transcribe every page of the document, except when sources.json gives extract_pages for it. Then only those pages go to tables[] and records[]; the rest is read only to fill strata[], trials[] and species_key[] (methods, site descriptions, legends, defeso dates, collection method).",
   "2 TWO KINDS OF DOCUMENT. document_kind is 'landings' (catch and landing statistics, artisanal fishery surveys: strata[] and landing records) or 'aquaculture_trial' (growth, survival, feed conversion, yield by treatment: trials[] and trial records), as sources.json says. Every record says record_type. A landings document has trials = [] and an aquaculture document has strata = [].",
-  "3 INVENTORY FIRST, EVERY TABLE AND FIGURE. Before writing any record, render every page in scope and list in tables[], in page order, every table, figure, map, photo, chart, species key and text block that prints numbers or names taxa, with table_id, page, label, kind and data_cells. Every figure, map, photo and diagram is inventoried, with data_cells = 0 and kind figure_unlabeled when it prints no value. A table continued on the next page gets one entry per page. A block without its own number but with its own header (a second year under the same caption) is its own entry. At the end each entry closes: data_cells = transcribed + skipped_cells, and transcribed = number of records with that table_id.",
+  "3 INVENTORY FIRST, EVERY TABLE AND FIGURE. Before writing any record, render every page in scope and list in tables[], in page order, every table, figure, map, photo, chart and species key, and every text block that gives records or pairs names (rule TEXT VALUES), with table_id, page, label, kind and data_cells. Every figure, map, photo and diagram is inventoried, with data_cells = 0 and kind figure_unlabeled when it prints no value. A table continued on the next page gets one entry per page. A block without its own number but with its own header (a second year under the same caption) is its own entry. At the end each entry closes: data_cells = transcribed + skipped_cells, and transcribed = number of records with that table_id.",
   "4 READ FROM THE RENDERED PAGE. The printed page is the source. Text layers of designed bulletins scramble captions and columns (mamiraua2012 p3 reads 'TABELA 01. Produção (kg)' then 'das principais esp'), glue superscript footnote markers to the number (albuquerque2010 Tabela 4, p17: the layer reads '19941' and '4392'; the page prints 1994 with marker 1 and 439 with marker 2) and lose the gap between cells (castro2009 Tabela 3, p11: '56,8 0.0' is two cells). Render at 150 dpi; go up only for one unreadable character.",
-  "5 STRATA FIRST (landings). One strata[] entry for the whole survey (s1, stratum_dimension = study), then one per printed level of every axis that splits the numbers: landing site, port, inspection post or entreposto; capture area (river, lake, bay, fishing ground, locality of origin); fleet or fishery (profissional, esportiva, artesanal, industrial); gear; vessel type; data source when the document reports two sources side by side (Porto de Tefé and Frigorífico Frigopeixe in mamiraua2012). A level printed under another of the same dimension points to it in parent_stratum_id (a destacamento under its pelotão); every other level points to s1. Period is not a stratum: it goes on the record (rule PERIOD). Fix the strata before writing records.",
-  "6 STRATUM FIELDS ONCE, WITH PAGE. Fill each stratum field from wherever the document prints it (methods, site table, caption, footnote, map legend, abstract) and put the page in field_pages. A field printed once for the whole survey goes on s1 and the others inherit it; a stratum repeats it only when its own value differs. null only when printed nowhere. Never take a place from the authors' affiliation, the publisher's address or the series name: Embrapa Pantanal, Corumbá is the publisher, not a landing site. data_collection_method_as_printed quotes the collection method (at most 15 words: 'preenchimento de fichas diárias', 'Guia de Controle de Pescado', 'acompanhamento do desembarque pesqueiro') and data_collection_method classifies it. coverage_gaps_as_printed holds printed gaps (defeso, months without data, 'Dados disponíveis a partir de maio').",
+  "5 STRATA FIRST (landings). One strata[] entry for the whole survey (s1, stratum_dimension = study), then one per printed level of every axis that splits the numbers: landing site, port, inspection post or entreposto; capture area (river, lake, bay, fishing ground, locality of origin); fleet or fishery (profissional, esportiva, artesanal, industrial); gear; vessel type; data source when the document reports two sources side by side (Porto de Tefé and Frigorífico Frigopeixe in mamiraua2012). A level printed under another of the same dimension points to it in parent_stratum_id (a destacamento under its pelotão); every other level points to s1, except a capture area printed only in the table of one data source, which points to that data source (mamiraua2012 Tabela 04: the areas of the Frigopeixe records), so its record_origin comes down from it. A capture area is itself a place: its stub label goes to water_body_as_printed of its own stratum as printed ('Capivara (Paraná)', 'Tuiuca (lago)'), and a label with no water body ('Localidade não informada', 'OUTRAS') leaves it null instead of taking the survey's rivers. Period is not a stratum: it goes on the record (rule PERIOD). Fix the strata before writing records.",
+  "6 STRATUM FIELDS ONCE, WITH PAGE. Fill each stratum field from wherever the document prints it (methods, site table, caption, footnote, map legend, abstract) and put the page in field_pages. The label of a stratum read from a table stub needs no field_pages entry: its page is the page of the table and the merge takes it from the first record of that stratum; field_pages holds the label page only when the label is printed outside the tables (methods, a site list). A field printed once for the whole survey goes on s1 and the others inherit it; a stratum repeats it only when its own value differs. null only when printed nowhere. Never take a place from the authors' affiliation, the publisher's address or the series name: Embrapa Pantanal, Corumbá is the publisher, not a landing site. data_collection_method_as_printed quotes the collection method (at most 15 words: 'preenchimento de fichas diárias', 'Guia de Controle de Pescado', 'acompanhamento do desembarque pesqueiro') and data_collection_method classifies it. coverage_gaps_as_printed holds printed gaps (defeso, months without data, 'Dados disponíveis a partir de maio').",
   "7 TABLE AXES BEFORE RECORDS. For every landing_results, trial_results, figure_labeled and text entry, fill table_level_labels before any record: what the rows are, what the columns are, the layout (single block, side-by-side blocks, transposed), the period and unit the caption gives the whole table, every printed total and summary row or column with its label, every symbol and footnote. Then fill columns[]: one entry per printed column with its header as printed and its role (rule COLUMN ROLES). A table printed in side-by-side blocks (mai2010, Tab. 1: two blocks of Taxa, N, P (g)) gets one columns[] entry per column of each block, and records carry column_block.",
   "8 FULL HEADERS. header_as_printed copies the whole header, top line to bottom line, spanning headers joined with ' / ' ('Pesca / Profissional / %', 'Nº de pescadores/mês', 'Densidade de estocagem (peixes/m3) / 300'), units and markers included. Never cut a header: in the biodiversity pilot a header cut in the middle cost 112 fields.",
   "9 COLUMN ROLES, closed examples. row_label = the stub (species, local de vistoria, mês, ano, tratamento); species_common and species_scientific = name columns; value = a column of numbers for one variable, period or stratum ('Mar.', 'Profissional', 'Produção (kg)', 'PF (g)'); total = a column that adds the others of its row ('Total', 'Total Geral'); percentage_share = '%', 'Porcentagem', 'Total relativo (%)'; cumulative_percentage = '% Ac.'; rank_or_order = a printed order number before the name (the 1 to 11 of the Araguaia table), not data; code = a printed code column; statistic_test = a CV, F, P or DMS column, counted and skipped; other.",
-  "10 ONE RECORD PER PRINTED DATA CELL. Every body cell that prints a number (0 included), a class, a date or a defined symbol is a data cell and gives one record: values, totals, subtotals, means, medians and standard deviations printed as rows or columns, percentages and cumulative percentages. Not data cells: headers, stub labels, heading rows, rank numbers, blank cells, and '-' or '--' unless the legend defines the dash (then value_kind = symbol, value = null, never converted to 0). ANOVA and test statistics (CV, F, P, DMS, residual standard deviation, 'ns' verdict rows, regression equations, R2) are counted and skipped (rule STATISTICS ARE NOT DATA).",
+  "10 ONE RECORD PER PRINTED DATA CELL. Every body cell that prints a number (0 included), a class, a date or a defined symbol is a data cell and gives one record: values, totals, subtotals, means, medians and standard deviations printed as rows or columns, percentages and cumulative percentages. A line of sample sizes printed under the header is data, one record per cell, with the variable it counts: martins2013 Tabela 1 prints '(17) (20) (23) (13) (14) (22) (109)' under the months, the landings analysed per column, so 7 records of n_landings (sample_size when the document does not say what was counted), row_label_as_printed the header that explains them. A printed range is one record, never two: 'variou de 1 a 17' gives value_kind = range, value = null, value_min = 1, value_max = 17, value_as_printed '1 a 17'. Not data cells: headers, stub labels, heading rows, rank numbers, blank cells, and '-' or '--' unless the legend defines the dash (then value_kind = symbol, value = null, never converted to 0). ANOVA and test statistics (CV, F, P, DMS, residual standard deviation, 'ns' verdict rows, regression equations, R2) are counted and skipped (rule STATISTICS ARE NOT DATA).",
   "11 TOTALS ARE RECORDS, NEVER RECOMPUTED. A printed total ('Total', 'Total (ano)', 'Total Geral', 'Produção total', 'Total (T)', 'Somatório', 'Total Geral (T)') is recorded like any other cell, with is_total = true and total_kind (row_total = adds across its row, column_total = adds down its column, grand_total = the corner cell, subtotal = a partial sum, cumulative_total). A summary row that is not a sum ('Média', 'Desvio Padrão', 'Mediana') has is_total = false and its statistic. Never fix, recompute or check a total during transcription: a total that does not add up is kept as printed. The sums are checked by script after adjudication, and that check is why totals are kept.",
-  "12 SPECIES AS PRINTED, TWO FIELDS, NEVER MATCHED. species_common_as_printed and species_scientific_as_printed each copy what that row of that table prints, with authorship, qualifiers ('sp.', 'spp', 'cf.'), spacing, typos and old spellings ('Dasyatjdae', 'Megalops at/anticus', 'Jau' and 'Jaú'). The scientific name is filled only when the same row or the same cell of the same table prints it ('Pacu (Piaractus mesopotamicus)'), and species_pairing says how. Never fill it from a species key, another table, the text or our own knowledge, even when the key sits on the facing page: the pairing is a later step outside the transcription. A row that is a catch-all ('Outros', 'OUTROS', 'Outras espécies', 'Diversos') has taxon_status = others_category. A row whose name cell holds no taxon name (only authorship, only '-', a group word such as 'Peixes de couro') has taxon_status = incomplete_in_print and the printed text stays in row_label_as_printed.",
+  "12 SPECIES AS PRINTED, TWO FIELDS, NEVER MATCHED. species_common_as_printed and species_scientific_as_printed each copy what that row of that table prints, with authorship, qualifiers ('sp.', 'spp', 'cf.'), spacing, typos and old spellings ('Dasyatjdae', 'Megalops at/anticus', 'Jau' and 'Jaú', 'Anisostremus' in mai2010 Tab. 1 where the valid genus is Anisotremus, 'Steliffer sp.' next to 'Stellifer stellifer' in the same table). Never correct a spelling, not even to the valid name. Names printed as examples of a group inside a sentence ('como a carpa (Cyprinus carpio), traíra...', castro2009 p7) are not record names: the record keeps the group the sentence counts, and the examples stay out. The scientific name is filled only when the same row or the same cell of the same table prints it ('Pacu (Piaractus mesopotamicus)'), and species_pairing says how. Never fill it from a species key, another table, the text or our own knowledge, even when the key sits on the facing page: the pairing is a later step outside the transcription. A row that is a catch-all ('Outros', 'OUTROS', 'Outras espécies', 'Diversos') has taxon_status = others_category. A row whose name cell holds no taxon name (only authorship, only '-', a group word such as 'Peixes de couro') has taxon_status = incomplete_in_print and the printed text stays in row_label_as_printed.",
   "13 RANK WORDS ARE NOT PART OF NAMES. A heading row 'Família Carcharhinidae' gives family_as_printed = 'Carcharhinidae'; 'ORDEM CHARACIFORMES' gives higher_group_as_printed = 'CHARACIFORMES'; a class heading ('Chondrychthyes', 'Osteichthyes', 'Crustáceos') goes to higher_group_as_printed as printed, joined top-down with ' / '. A heading row is not a data cell. Never infer a family from the genus.",
   "14 NAME PROBLEMS. A scientific name printed with the genus abbreviated ('M. ancylodon') keeps the abbreviation; scientific_name_in_full_as_printed and its page are filled only when the same document prints the full name in another table or the text. A name spelled differently in two tables of the same document (or in the text) gets source_inconsistency on every record of that name in both tables, with both spellings and pages. A footnote marker printed on a name ('Pinirampus pirinampu (Spix, 1829) 1') goes to footnote_marker, not into the name.",
   "15 SPECIES KEYS. A table or block that only pairs common names with scientific names (albuquerque2010 Tabela 1, p12; castro2009 Tabela 5, p12) is kind species_key, data_cells = 0, and each printed pair goes once to species_key[], one entry per scientific name (two names under 'Barbado' give two entries), with its markers. species_key[] is the only place where a common and a scientific name sit together without being on the same row of a results table.",
-  "16 VARIABLE, UNIT, STATISTIC PER COLUMN. Each value column says variable_standardized (closed list), its unit as printed and where it was read (header, caption, footnote, methods, text, unit_source_place), and its statistic. Catch weight is catch_weight; a printed 'Estimativa de captura' is catch_weight_estimated; 'pescado comercializado' is commercialized_weight; 'Descarte' is discard_weight or discard_number as the unit says; 'N' of individuals is catch_number; 'Nº de registros' is n_records; 'Número de desembarques' is n_landings; 'NDP' is n_fishing_days; 'CAPPVG', 'CAPPD', 'kg/dia' and 'g/m2.hora' are cpue with the unit as printed; 'Nº de pescadores' is n_fishers. A '%' column keeps the variable it is a share of and statistic = percentage_share; '% Ac.' is cumulative_percentage. A row with its own unit (mamiraua2012 Tabela 01: Acari-bodó counted in units, '* Produção por unidade') carries unit on its records. Never convert t to kg, g to kg or units to weight.",
-  "17 PERIOD AS PRINTED, PER CELL. period_as_printed holds the most specific period printed for the cell, from its column header, its row label or the caption, exactly as printed ('Mar.', 'jan', 'Dez', '2005', '1º semestre de 2012', 'set/2010'); period_context_as_printed holds the broader period the caption or methods print when the cell's own period is narrower ('no ano de 2007' for a 'Mar.' column). A month printed only as a number in a stub ('3' in albuquerque2010 Tabela 13) is copied as printed. Never build a date, never add a year the cell does not print, never take a year from the publication date. Every value column says its period, or period_status = not_printed after header, caption, footnotes and methods were read.",
+  "16 VARIABLE, UNIT, STATISTIC PER COLUMN. Each value column says variable_standardized (closed list), its unit as printed and where it was read (header, caption, footnote, methods, text, unit_source_place), and its statistic. Catch weight is catch_weight; a printed 'Estimativa de captura' is catch_weight_estimated; 'pescado comercializado' is commercialized_weight; 'Descarte' is discard_weight or discard_number as the unit says; 'N' of individuals is catch_number; 'Nº de registros' is n_records; 'Número de desembarques' is n_landings; 'NDP' is n_fishing_days; 'CAPPVG', 'CAPPD', 'kg/dia' and 'g/m2.hora' are cpue with the unit as printed; 'Nº de pescadores' is n_fishers. A '%' column keeps the variable it is a share of and statistic = percentage_share; '% Ac.' is cumulative_percentage. A row with its own unit (mamiraua2012 Tabela 01: Acari-bodó counted in units, '* Produção por unidade') carries unit on its records. When the caption or a note prints the whole unit ('em quilogramas por pano de rede de 50 m') and the stub or header only an abbreviation ('Média em kg'), the caption unit wins, with unit_source_place = caption; a unit printed only in the caption ('número de dias de pesca (NDP)' gives 'dias') counts as printed and is never not_printed. statistic null means single_value on landing tables and the table statistic on trial tables; a transcriber may write single_value or leave it null, compare.py and merge.py read both the same. Never convert t to kg, g to kg or units to weight: the merge adds unit_standardized (the same unit in one spelling) and never touches the value.",
+  "17 PERIOD AS PRINTED, PER CELL. period_as_printed holds the most specific period printed for the cell, from its column header, its row label or the caption, exactly as printed ('Mar.', 'jan', 'Dez', '2005', '1º semestre de 2012', 'set/2010'); period_context_as_printed holds the broader period the caption or methods print when the cell's own period is narrower ('no ano de 2007' for a 'Mar.' column). A month printed only as a number in a stub ('3' in albuquerque2010 Tabela 13) is copied as printed. Never build a date, never add a year the cell does not print, never take a year from the publication date. Every value column says its period, or period_status = not_printed after header, caption, footnotes and methods were read. A text value with no narrower period of its own takes the period of its paragraph or, failing that, the study's period in period_as_printed, as printed, with that page in period_source_page; a phrase that only points to a period ('ao longo deste período', 'no mesmo período') is resolved to the printed period it points to, never copied as the period.",
   "18 STRATUM OF A CELL. stratum_ids lists every stratum the cell belongs to: the stratum of its row (a local de vistoria), the stratum of its column (Profissional) and the stratum the caption gives the whole table, one per dimension, most specific first. A record of a whole-survey table points to s1 only. The table entry lists in stratum_ids every stratum with a cell on that page.",
   "19 COPY NUMBERS EXACTLY. value_as_printed is the cell exactly as printed, without footnote markers, letters and dispersion term; value is the number. The only allowed changes are decimal comma to point and dropping a thousands point ('150.560' -> 150560, '1.166,00' -> 1166.0). A point that could be decimal or thousands is decided from the column's other cells and unit, with notes when not obvious. A table that mixes separators keeps each cell as printed ('0.0' among '0,0' cells). A number whose separators cannot be read as one number ('8.14,8', albuquerque2010 Tabela 2, p16) has value_kind = malformed, value = null and value_as_printed as printed; never guess the intended number. A superscript or footnote marker on a number goes to footnote_marker.",
   "20 NEVER COMPUTE OR INFER. No sums, no shares, no CPUE, no per-fisher or per-day values, no monthly values from annual ones, no conversions, no values read off a chart by eye, no value derived from a regression. If the document does not print the number, it does not go in.",
   "21 WHO RECORDED IT. record_origin says where the document says the numbers came from: monitoring_programme = the survey or monitoring the document reports (porto de Tefé, guias do SCPESCA, fichas diárias da Billings); third_party_records = records handed over by an organisation outside the monitoring (the Frigopeixe reception control in mamiraua2012); cited_source = another publication; mixed; not_stated. It is set on the stratum and on the table and repeated on a record only when that row differs.",
-  "22 TEXT VALUES. A per-stratum or per-period value printed only in the body text is a mandatory record when no table or labelled figure prints it (mamiraua2012 p3 gives the monthly Frigopeixe receptions only in the text): table_or_figure = 'text', one tables[] entry with label 'text' per page, the quote (at most 15 words) in notes. A text value that repeats a table cell is not recorded again. A text value that contradicts a table is not a record: it goes to source_inconsistency of the table record.",
+  "22 TEXT VALUES. A per-stratum or per-period value printed only in the body text is a mandatory record when no table or labelled figure prints it (mamiraua2012 p3 gives the monthly Frigopeixe receptions only in the text): table_or_figure = 'text', one tables[] entry with label 'text' per page, the quote (at most 15 words) in notes. Only text blocks with results of this study or a species key (scientific with common names) go to tables[]; numbers in methods, discussion, other studies and references give no entry. A text entry has one implicit column: columns = [{column_id 'c1', header_as_printed 'text', role value, variable, unit and statistic null}], every record of the block has column_id c1, row_index counts the values in reading order, and each record writes its own variable_standardized, unit and statistic. A and B are paired by the number cited, not by position. A text value that repeats a table cell is not recorded again. A text value that contradicts a table is not a record: it goes to source_inconsistency of the table record.",
   "23 CONTRADICTIONS THE DOCUMENT PRINTS. When the document contradicts itself (text against table, caption against methods, a name spelled two ways, two tables giving the same cell two values, a footnote that does not match), record the table value and fill source_inconsistency with both versions and pages, on the record, the table or the stratum it is about. A sum we would have computed is not a contradiction (rule TOTALS ARE RECORDS).",
   "24 ILLEGIBLE CELLS STAY IN. A data cell that cannot be read with confidence is a record with value_kind = illegible, value = null, the best reading in value_as_printed and the doubt in notes. It counts as transcribed.",
   "25 FIGURES. A figure gives records only when it prints the values at its bars, slices or points (kind figure_labeled); its series are its columns[]. Bar charts, pie charts, curves and maps without printed values are figure_unlabeled with data_cells = 0. Values are never read off an axis.",
@@ -38,8 +38,8 @@
   "31 TREATMENT AS PRINTED. treatment is the row or column label exactly as printed, with its level and unit when the stub prints them ('D–50, 50 jundiás por m3', '200', 'Tailandesa A'); a numeric stub whose unit is in the spanning header takes the header unit in stocking_density_as_printed or feeding_regime_as_printed, never in treatment. treatment_code holds a printed code ('D–50', 'T3'). Every special row (control, mean, a positive reference diet) is listed in row_identity.special_rows and carries treatment_type on its records.",
   "32 WHEN IT WAS MEASURED, PER COLUMN, NEVER INVENTED. Every trial column declares measurement_time_status. When the time is printed (header '30 dias', caption 'no período de 160 dias', methods 'aos 30 e 60 dias de criação foram capturados 30 peixes'), measurement_time holds it with its page and place. A final-weight or survival column takes the end of the trial only when the document prints the duration or the date of the final biometry; otherwise not_printed. A column with no time (feed composition, a whole-period mean of water quality) is not_applicable only when the document says it is a mean over the period; then measurement_time quotes that.",
   "33 STATISTICS ARE NOT DATA. CV, F, P or p-values, DMS, Tukey or Duncan values, residual standard deviation ('Desvio‑padrão residual'), effect verdict rows ('Efeito da densidade (D) ns', 'Interação D × F ns'), regression equations, R2, correlation matrices and fitted parameters are counted as data cells and skipped, with the count in skipped_reason. A table made only of them is kind anova.",
-  "34 DISPERSION AND LETTERS. A dispersion term attached to a value ('± 3,06', '±0,03') goes to dispersion_as_printed of that record, never a separate record; what it is (erro-padrão, desvio-padrão) goes once in table_level_labels.dispersion_meaning_as_printed with the page. Significance letters and asterisks go to significance_letter exactly as printed ('a', 'ab', 'A', '*', 'ns' printed on a value); what they compare goes once in letters_meaning.",
-  "35 WATER QUALITY. Water-quality values printed per treatment (brandao2004 Tabela 1, cartaxo2010 Tabela 2) are trial records with variable_standardized = water_quality and the parameter in the column or row label. Values printed only for the whole trial or for the water body outside the units (the açude in brandao2004 p2) are trial context in water_context_as_printed, not records.",
+  "34 DISPERSION AND LETTERS. A dispersion term attached to a value ('± 3,06', '±0,03') goes to dispersion_as_printed of that record, never a separate record; what it is (erro-padrão, desvio-padrão) goes once in table_level_labels.dispersion_meaning_as_printed with the page. Significance letters and asterisks go to significance_letter exactly as printed ('a', 'ab', 'A', '*', 'ns' printed on a value); what they compare goes once in letters_meaning. Closed example, martinelli2013 (p4 to p6): 'ns' and '*' printed on the effect verdict rows are not letters; those rows are skipped (rule STATISTICS ARE NOT DATA), their meanings go to symbols, and letters_meaning stays null unless letters are printed on the values (Tabela 4, 'Médias seguidas de letras iguais...'). A footnote whose marker is '(1)' and whose text starts with 'ns' (Tabela 2) is one footnote: marker '(1)', text with the 'ns' definition, and 'ns' also in symbols. Two notes printed on one line ('*' Significativo..., 'ns' Não significativo, Tabela 5) are two footnotes[] entries, one per marker.",
+  "35 WATER QUALITY. Water-quality values printed per treatment (brandao2004 Tabela 1, cartaxo2010 Tabela 2) are trial records with variable_standardized = water_quality and the parameter in the column or row label. Values printed only for the whole trial or for the water body outside the units (the açude in brandao2004 p2) are trial context in water_context_as_printed, not records. A sentence saying the water stayed within adequate limits, with no number, is also water_context_as_printed (cartaxo2010 p2); null only when the document says nothing about the water of the trial.",
   "36 DESIGN TABLES ARE CONTEXT. Diet formulation and composition tables, feeding-rate schedules, lists of treatments and sites are kind trial_design or stratum_context, data_cells = 0, and fill trials[], strata[] and the records' feed_as_printed and feeding_regime_as_printed. A diet composition measured as a result of the treatments (body composition of the fish) is trial_results.",
   "37 page is the PDF page number counted from 1 (first page of the file = 1), not the number printed on the page. table_or_figure is the label as printed ('Tabela 2', 'TABELA 01', 'Tab. 1', 'Quadro 1', 'Figura 3', 'text').",
   "38 TWO INDEPENDENT TRANSCRIPTIONS. Each document is transcribed twice, by A and B, each without seeing the other. A script diffs A and B record by record (landings key: table_id, column_block, row_index, column_id; trials key: table_id, row_index, column_id) and field by field, and an adjudicator decides every difference against the rendered page. Write transcriber = 'A' or 'B'.",
@@ -63,16 +63,7 @@
   "doc_id": {
    "description": "Document id from sources.json (also the PDF file name without .pdf).",
    "type": "string",
-   "enum": [
-    "albuquerque2010-scpesca-ms-2007-pantanal",
-    "castro2009-producao-pesqueira-billings-sp",
-    "mamiraua2012-desembarque-tefe-am",
-    "mai2010-currais-piaui",
-    "martins2013-desembarque-tijucas-sc",
-    "brandao2004-tambaqui-densidade-tanques-rede-am",
-    "cartaxo2010-linhagens-tilapia-baixo-sao-francisco",
-    "martinelli2013-jundia-densidade-frequencia-tanques-rede"
-   ]
+   "pattern": "^[a-z0-9][a-z0-9-]*$"
   },
   "transcriber": {
    "description": "Rule TWO INDEPENDENT TRANSCRIPTIONS.",
@@ -85,7 +76,7 @@
   },
   "schema_version": {
    "description": "Version of this schema used.",
-   "const": "pesca-1.0-pilot",
+   "const": "2.0",
    "type": "string"
   },
   "document_kind": {
@@ -235,7 +226,7 @@
      ]
     },
     "water_body_as_printed": {
-     "description": "River, reservoir, lake, bay or coast where the fish was caught, as printed ('Bacia do Alto Paraguai', 'Reservatório Billings', 'rios Solimões, Japurá e Jutaí', 'litoral do Piauí'), at most 15 words.",
+     "description": "River, reservoir, lake, bay or coast where the fish was caught, as printed ('Bacia do Alto Paraguai', 'Reservatório Billings', 'rios Solimões, Japurá e Jutaí', 'litoral do Piauí'); for a capture area, its own stub label ('Capivara (Paraná)'), at most 15 words.",
      "type": [
       "string",
       "null"
@@ -336,7 +327,7 @@
      ]
     },
     "field_pages": {
-     "description": "Page of each filled field: {field name: page}. Inherited fields are not repeated.",
+     "description": "Page of each filled field: {field name: page}. Inherited fields are not repeated, and a label read from a table stub needs no entry (rule 6).",
      "type": "object",
      "additionalProperties": {
       "type": "integer",
@@ -1467,7 +1458,7 @@
         ]
        },
        "statistic": {
-        "description": "Null = as the table (trials) or single_value (landings). Filled when the column is a total, a share, a mean or another statistic.",
+        "description": "Null = as the table (trials) or single_value (landings); writing single_value is the same. Filled when the column is a total, a share, a mean or another statistic.",
         "type": [
          "string",
          "null"
@@ -1730,7 +1721,7 @@
      ]
     },
     "statistic": {
-     "description": "Null = as the table (trials) or single_value (landings). Filled when the column is a total, a share, a mean or another statistic.",
+     "description": "Null = as the table (trials) or single_value (landings); writing single_value is the same. Filled when the column is a total, a share, a mean or another statistic.",
      "type": [
       "string",
       "null"
@@ -2483,6 +2474,7 @@
     "row_label_as_printed",
     "stratum_ids",
     "period_as_printed",
+    "period_source_page",
     "period_context_as_printed",
     "species_common_as_printed",
     "species_scientific_as_printed",
@@ -2496,6 +2488,8 @@
     "variable_as_printed",
     "value_kind",
     "value",
+    "value_min",
+    "value_max",
     "value_as_printed",
     "dispersion_as_printed",
     "footnote_marker",
@@ -2565,6 +2559,14 @@
       "string",
       "null"
      ]
+    },
+    "period_source_page": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 1,
+     "description": "Page where period_as_printed was read when it is not the cell's own page (a text value that takes its paragraph's or the study's period, rule PERIOD); else null."
     },
     "period_context_as_printed": {
      "description": "The broader period of the caption or methods when period_as_printed is narrower ('no ano de 2007'); else null.",
@@ -2675,10 +2677,11 @@
      ]
     },
     "value_kind": {
-     "description": "numeric; class (a printed class or date); symbol (a defined symbol, value null); malformed (rule COPY NUMBERS EXACTLY); illegible.",
+     "description": "numeric; range (a printed 'de 1 a 17', with value_min and value_max); class (a printed class or date); symbol (a defined symbol, value null); malformed (rule COPY NUMBERS EXACTLY); illegible.",
      "type": "string",
      "enum": [
       "numeric",
+      "range",
       "class",
       "symbol",
       "malformed",
@@ -2686,14 +2689,28 @@
      ]
     },
     "value": {
-     "description": "The number, decimal point, thousands separator dropped. Null for class, symbol, malformed and illegible.",
+     "description": "The number, decimal point, thousands separator dropped. Null for range, class, symbol, malformed and illegible.",
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "value_min": {
+     "description": "For value_kind = range: the lower number printed ('1' in 'variou de 1 a 17'); null otherwise.",
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "value_max": {
+     "description": "For value_kind = range: the upper number printed; null otherwise.",
      "type": [
       "number",
       "null"
      ]
     },
     "value_as_printed": {
-     "description": "The cell exactly as printed, without footnote markers, letters and dispersion term ('150.560', '28,12%', '8.14,8', '0.0', '474,08').",
+     "description": "The cell exactly as printed, without footnote markers, letters and dispersion term ('150.560', '28,12%', '8.14,8', '0.0', '474,08', '1 a 17').",
      "type": "string"
     },
     "dispersion_as_printed": {
@@ -2784,7 +2801,31 @@
       "null"
      ]
     }
-   }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "value_kind": {
+        "const": "range"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "value": {
+        "type": "null"
+       },
+       "value_min": {
+        "type": "number"
+       },
+       "value_max": {
+        "type": "number"
+       }
+      }
+     }
+    }
+   ]
   },
   "trial_record": {
    "description": "One printed data cell of an aquaculture trial table, labelled figure or text value.",
@@ -2816,6 +2857,8 @@
     "variable_as_printed",
     "value_kind",
     "value",
+    "value_min",
+    "value_max",
     "value_as_printed",
     "dispersion_as_printed",
     "footnote_marker",
@@ -3013,10 +3056,11 @@
      ]
     },
     "value_kind": {
-     "description": "numeric; class (a printed class or date); symbol (a defined symbol, value null); malformed (rule COPY NUMBERS EXACTLY); illegible.",
+     "description": "numeric; range (a printed 'de 1 a 17', with value_min and value_max); class (a printed class or date); symbol (a defined symbol, value null); malformed (rule COPY NUMBERS EXACTLY); illegible.",
      "type": "string",
      "enum": [
       "numeric",
+      "range",
       "class",
       "symbol",
       "malformed",
@@ -3024,14 +3068,28 @@
      ]
     },
     "value": {
-     "description": "The number, decimal point, thousands separator dropped. Null for class, symbol, malformed and illegible.",
+     "description": "The number, decimal point, thousands separator dropped. Null for range, class, symbol, malformed and illegible.",
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "value_min": {
+     "description": "For value_kind = range: the lower number printed ('1' in 'variou de 1 a 17'); null otherwise.",
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "value_max": {
+     "description": "For value_kind = range: the upper number printed; null otherwise.",
      "type": [
       "number",
       "null"
      ]
     },
     "value_as_printed": {
-     "description": "The cell exactly as printed, without footnote markers, letters and dispersion term ('150.560', '28,12%', '8.14,8', '0.0', '474,08').",
+     "description": "The cell exactly as printed, without footnote markers, letters and dispersion term ('150.560', '28,12%', '8.14,8', '0.0', '474,08', '1 a 17').",
      "type": "string"
     },
     "dispersion_as_printed": {
@@ -3109,7 +3167,31 @@
       "null"
      ]
     }
-   }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "value_kind": {
+        "const": "range"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "value": {
+        "type": "null"
+       },
+       "value_min": {
+        "type": "number"
+       },
+       "value_max": {
+        "type": "number"
+       }
+      }
+     }
+    }
+   ]
   },
   "end_checklist": {
    "type": "object",
@@ -3590,17 +3672,19 @@
   }
  },
  "changes_from_previous": [
-  "New: strata[] block for landing statistics (study, landing site, capture area, fleet or fishery, gear, vessel type, data source), with field pages and inheritance, adapted from the events[] block of biodiversidade-piloto/schema.json; period moved to the record (rule PERIOD AS PRINTED, PER CELL).",
-  "New: totals are records with is_total and total_kind (rule TOTALS ARE RECORDS); the biodiversity and agricultural schemas skipped totals. Means, medians, standard deviations, shares and cumulative shares printed as rows or columns are records with their statistic.",
-  "New: common and scientific names in separate fields, never matched (rule SPECIES AS PRINTED); name keys go to species_key[] (rule SPECIES KEYS).",
-  "Carried from batata/schema.json v8 for aquaculture: trials[] with context once and page, table axes, main effects only, special rows, units from header to methods, measurement time per column never invented, statistics not data, dispersion and letters, uniform management as context (was uniform sprays), design tables as context.",
-  "Biodiversity lesson 1: rank words are not part of names (rule RANK WORDS ARE NOT PART OF NAMES), with examples that show the word dropped.",
-  "Biodiversity lesson 2: full headers, never cut (rule FULL HEADERS).",
-  "Biodiversity lesson 3: one wording for figures: every figure, map and photo in the inventory, 0 cells when it prints no value (rules INVENTORY FIRST and FIGURES).",
-  "Biodiversity lessons 4 to 6: abbreviated genus, row without a name and the same name spelled two ways (rule NAME PROBLEMS).",
-  "Biodiversity lessons 7 to 9: as-printed fields hold only the printed words, at most 15 words, no glosses, symbol meanings once per table (rule AS-PRINTED FIELDS HOLD ONLY PRINTED WORDS).",
-  "Biodiversity lesson 10: stratum_ids per page for continued tables (rule STRATUM OF A CELL).",
-  "Biodiversity lessons 11 and 12, adapted: data_collection_method and record_origin on stratum, table and record (rules STRATUM FIELDS and WHO RECORDED IT), so third-party records (a fish plant's reception control) can be kept apart.",
-  "Batata lessons carried: sample-size columns are data (n_landings, n_records, sample_size); a block without a number but with its own header is its own entry; text that contradicts a table is not a record; arithmetic is checked by script after adjudication, never during transcription."
+  "From pesca-1.0-pilot, the 13 changes of pesca-piloto/RODADA.md:",
+  "1 Default statistic: null = single_value on landing tables, applied by compare.py before comparing and by merge.py (rule 16).",
+  "2 The label page of a stratum read from a table stub is no longer required in field_pages; merge.py takes it from the first record (rule 6, strata.csv label_page).",
+  "3 A capture area is a place: its stub fills its own water_body_as_printed, and an area printed only in one data source's table points to that source (rule 5).",
+  "4 Text period: a text value takes its paragraph's or the study's period, with period_source_page; pointing phrases are resolved (rule 17, new landing field period_source_page).",
+  "5 A sample-size line under the header is data, closed example martins2013 Tabela 1 (rule 10).",
+  "6 Ranges: value_kind range with value_min and value_max, one record ('variou de 1 a 17') (rule 10, new record fields value_min and value_max).",
+  "7 Spelling as printed with examples (Anisostremus, Steliffer); names given as examples of a group in a sentence are not record names (rule 12).",
+  "8 The caption unit wins over an abbreviation in the stub, and a unit printed only in the caption counts as printed (rule 16).",
+  "9 unit_standardized derived in merge.py, the same unit in one spelling, values never converted (rule 16).",
+  "10 Narrower text inventory: only text blocks with results of this study or a species key (rules 3 and 22).",
+  "11 Closed example for trial footnotes and verdict symbols, martinelli2013 '(1)ns' and '*' (rule 34).",
+  "12 A sentence saying the water stayed within adequate limits is water_context_as_printed (rule 35).",
+  "13 A text block has one implicit column c1 and A and B text records are paired by the number cited, not by position (rule 22, compare.py)."
  ]
 }
